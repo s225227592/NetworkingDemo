@@ -20,7 +20,8 @@ int main()
         delay(1000);
     }
 
-    string receivedMessage = read_message_data(serverName);
+    string receivedMessage = read_message_data(serverTest);
+    //messa
     write_line("Received message: " + receivedMessage);
 
     close_server(serverName);
