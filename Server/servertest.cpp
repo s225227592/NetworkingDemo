@@ -11,11 +11,11 @@ int main()
     const unsigned short portNum = 5432;
     const string serverName = "testing server";
 
-
     serverTest = create_server(serverName, portNum, protocol);
 
     while(!has_messages(serverName))
     {
+        check_network_activity();
         write_line("Waiting for messages...");
         delay(1000);
     }

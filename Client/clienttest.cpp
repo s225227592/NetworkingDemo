@@ -10,8 +10,11 @@ int main()
 
     connection serverConnection = open_connection(serverConnectionName, hostIP, portNum, protocol);
 
-    // For UDP, no need to check is_connection_open
-    send_message_to("Hello this is client", serverConnection);
+    // for(int i = 0; i < 20; i++)
+    // {
+        send_message_to("Hello this is client", serverConnection);
+        //delay(1000);
+    // }    
 
     close_connection(serverConnection);
 
