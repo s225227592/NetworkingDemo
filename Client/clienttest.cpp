@@ -1,4 +1,7 @@
 #include "splashkit.h"
+#include <ctime>
+
+using std::to_string;
 
 int main()
 {
@@ -10,11 +13,18 @@ int main()
 
     connection serverConnection = open_connection(serverConnectionName, hostIP, portNum, protocol);
 
-    // for(int i = 0; i < 20; i++)
-    // {
-        send_message_to("Hello this is client", serverConnection);
-        //delay(1000);
-    // }    
+    for(int i = 1; i < 2; i++)
+    {
+        string messageSent = "";
+        messageSent += "X159.15|";
+        messageSent += "Y123.50|";
+        messageSent += "R-90.0";
+        //time_t timestamp;
+        //time(&timestamp);
+        send_message_to(messageSent, serverConnection);
+        //delay(50);
+        write_line("Message sent: " + messageSent);
+    }
 
     close_connection(serverConnection);
 
