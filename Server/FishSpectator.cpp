@@ -1,15 +1,28 @@
-#include "splashkit.h"
-#include <ctime>
+/**
+ * Matthew Geri - 225227592
+ * BigFish networking demonstration SIT102 HD project
+ * Spectator program file
+ * Last updated 23/05/2025
+ */
 
+
+// Using splashkit for GUI
+#include "splashkit.h"
+
+// Using to_string for some debugging purposes, can be removed when finalised
 using std::to_string;
 
+// Constant strings for the game timer and bitmap names
 const string PLAYER_BITMAP = "PlayerBMP";
+// Array containing names of files for the fish images
 const string playerFiles[] = {"PlayerFishMid.png", "PlayerFishLeft.png", "PlayerFishRight.png"};
 
+// Constanst values for window size and refresh rate info
 const int SCREEN_WIDTH = 500;
 const int SCREEN_HEIGHT = 500;
-const int FRAME_RATE = 60;
+const int FRAME_RATE = 30;
 
+// Enum to determine if a fish is currently turning left/right or swimming straight
 enum turn_enum
 {
     none,
@@ -17,45 +30,62 @@ enum turn_enum
     right
 };
 
+// Fish struct used for player
 struct fish
 {
-    double x;
-    double y;
-    double angle;
-    float size;
-    bitmap bmp;
-    turn_enum turn;
+    double x; // X position
+    double y; // Y position
+    double angle; // Angle fish is currently facing
+    float size; // Size of the fish
+    bitmap bmp; // Bitmap for loading image
+    turn_enum turn; // Current turn status of left/right/none
 
+    /**
+     * Extracts data from the received network message and sets fish values accordingly
+     * 
+     * @param received The message received over the network containing all data
+     */
     void setVars(string received)
     {
+        // Default label value E for empty, for when a new value label needs to be set
         string currVal = "E"; // E for empty
+        // String to convert to appropriate number data type, each character will be added until |
         string toConvert = "";
 
+        // Checks message string character by character to determine how to process
         for(char a: received)
         {
+            // Temporary string for checking character info
             string temp = "";
             temp += a;
 
+            // If current label is E
             if(currVal == "E")
             {
+                // Set label as current character which should be X, Y, R, T, S etc
                 currVal = a;
+                // Move to next char in for each loop
                 continue;
             }
-            else if(is_double(temp) || a == '.' | a == '-')
+            // If current character is a number character, . or -, then it is added to convertable string
+            else if(is_double(temp) || a == '.' || a == '-')
             {
                 toConvert += a;
             }
+            // If character is | this signifies end of value,
+            // so value should be converted to appropriate data type and assigned to fish value based on label
             else if(a == '|')
             {
-                if(currVal == "X")
+                
+                if(currVal == "X") // If label is X, assign to fish's x position
                     x = std::stod(toConvert);
-                else if(currVal == "Y")
+                else if(currVal == "Y") // If label is Y, assign to fish's y position
                     y = std::stod(toConvert);
-                else if(currVal == "R")
+                else if(currVal == "R") // If label is R, assign to fish's angle of rotation
                     angle = std::stod(toConvert);
-                else if(currVal == "S")
+                else if(currVal == "S") // If label is S, assign to fish's size value
                     size = std::stof(toConvert);
-                else if(currVal == "T")
+                else if(currVal == "T") // If label is T, set turn status accordingly
                 {
                     switch (std::stoi(toConvert))
                     {
@@ -75,22 +105,20 @@ struct fish
                 }
                 else
                     write_line("Error with assigning variable: ");
-
+                // Once value is assigned, reset convert string as empty
                 toConvert = "";
+                // And reset label to empty so next character will be the new value label
                 currVal = "E";
             }
             else
             {
+                // Else statement in case of errors
                 write_line("False not adding: ");
             }
         }
-        // write_line("X: " + to_string(x));
-        // write_line("Y: " + to_string(y));
-        // write_line("R: " + to_string(angle));
-        // write_line("S: " + to_string(size));
-        // write_line("T: " + to_string(turn));
     }
 
+    // Draws fish to screen based on current set values
     void draw()
     {
         drawing_options drawOptions = option_defaults();
@@ -106,58 +134,80 @@ struct fish
         drawOptions.scale_y = size;
 
         // Draw the bitmap to screen, modifies position to account for the image dimensions
-        // Was unable to work out a better way other than modifying where image is drawn for better collission detection
+        // Was unable to work out a better way other than modifying where image is drawn for better collision detection
         draw_bitmap(bmp, x - (1 * 13), y - (1 * 24), drawOptions);
     }
 };
 
 int main()
 {
-    server_socket serverTest;
+    // Create a server with default info
+    server_socket Spectator;
+    // Server protocol will use UDP
     const connection_type protocol = UDP;
+    // Receiving port will be 5432, but can be changed to any available port on device
     const unsigned short portNum = 5432;
-    const string serverName = "testing server";
+    // String representation for the server
+    const string serverName = "Spectator";
 
-    serverTest = create_server(serverName, portNum, protocol);
+    // Create the server using selected values
+    Spectator = create_server(serverName, portNum, protocol);
 
-    while(!has_messages(serverTest))
+    // Wait for the server to receive the first message
+    while(!has_messages(Spectator))
     {
         write_line("Waiting for connection...");
         delay(200);
+        // After delay check again for new messages
         check_network_activity();
     }
 
+    // Message has been received so begin game setup
     write_line("Game connected...loading game");
-    double x = 0.0;
-    double y = 0.0;
-    double angle = 0.0; 
+
+    // Start with an empty string in case of message errors
     string receivedMessage = "";
-    open_window("Server BigFish", SCREEN_WIDTH, SCREEN_HEIGHT);
+    // Open the window based on global size values
+    open_window("Spectator BigFish", SCREEN_WIDTH, SCREEN_HEIGHT);
+    // Create a fish with default values.
     fish networkFish;
 
-    //while(has_messages(serverTest))
+    // Keep looping until player closes the window, or player presses esc key
     while(!quit_requested())
     {
+        // Check for player input
         process_events();
-        if(has_messages(serverTest))
+
+        // If there is currently a message waiting to be processed
+        if(has_messages(Spectator))
         {
-            receivedMessage = read_message_data(serverTest);
+            // Get the message and assign to the message string
+            receivedMessage = read_message_data(Spectator);
+            // Pass the message string to extract data and assign to fish's fields
             networkFish.setVars(receivedMessage);
         }
 
+        // Reset screen with blue background
         clear_screen(color_cornflower_blue());
         
+        // Draw the fish to the screen.
         networkFish.draw();
+        // Clear bitmap from memory so new images can be used (probably a better way to do this)
         free_all_bitmaps();
+
+        //Set refresh rate
         refresh_screen(FRAME_RATE); // Set refresh rate to default game FRAME_RATE
+
+        // If player presses escape key, end game while loop
         if(key_down(ESCAPE_KEY))
         {
             break;
         }
+
+        // Check again for new messages
         check_network_activity();
-
-
     }
 
+    // Once game has ended, close the server.
     close_server(serverName);
 }

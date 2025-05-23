@@ -1,4 +1,12 @@
 /**
+ * Matthew Geri - 225227592
+ * BigFish networking demonstration SIT102 HD project
+ * Host program file
+ * Last updated 23/05/2025
+ */
+
+
+/**
  * Using splashkit for GUI interface
  * Using cmath for calculating x/y changes based on fish direction
  */
@@ -9,12 +17,15 @@
 using std::to_string;
 
 // Networking info for connection
-const string hostIP = "192.168.56.101";
+// Hardcoded IP but in future aim to get IP string as an input from user
+const string hostIP = "127.0.0.1";
+// Using UDP so no handshake needed, just send data, randomly selected open port 5432
 const connection_type protocol = UDP;
 const unsigned short portNum = 5432;
+// Just a string of the name for the UDP "connection" type
 const string serverConnectionName = "server connection";
 
-// Screen window dimensions
+// Screen window dimensions (Using small screen for easier demo of networking)
 const int SCREEN_WIDTH = 500;
 const int SCREEN_HEIGHT = 500;
 
@@ -373,14 +384,17 @@ struct game
 
     string constructMessage()
     {
+        // Create an empty string to return.
         string message = "";
+
+        // Add value label infront of actual data, and use | to signify end of value
         message += "X" + to_string(Player.playerFish.pos.x) + "|";
         message += "Y" + to_string(Player.playerFish.pos.y) + "|";
         message += "R" + to_string(Player.playerFish.angle) + "|";
         message += "S" + to_string(Player.playerFish.size) + "|";
         message += "T" + to_string(Player.playerFish.turn) + "|";
-        //write_line(message);
 
+        // Return string with formatted data for the message
         return message;
     }
 };
@@ -400,6 +414,7 @@ int main()
     create_timer(GAME_TIMER);
     start_timer(GAME_TIMER);
 
+    // Create an empty string to be reused for creating and sending over network
     string message = "";
 
     // Continue loop until player chooses to quit
@@ -410,14 +425,16 @@ int main()
         Game.update(); // Update game values
         Game.draw(); // Draw game values to screen
 
-        
+        // Depending on performance, using a message time to delay how often messages are sent
         if(Game.messageTime <= timer_ticks(GAME_TIMER))
         {
+            // Call the construct message to get fish's data to send
             message = Game.constructMessage();
+            // Send the message using created connection
             send_message_to(message, serverConnection);
+            // Determine next time a message is sent
             Game.messageTime = timer_ticks(GAME_TIMER) + 50;
         }
-        //write_line("Message sent: " + message);
     }
     //End of main()
 }
